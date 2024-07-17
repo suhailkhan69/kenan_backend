@@ -348,28 +348,35 @@ app.get('/api/uploads/:patientId', async (req, res) => {
 
 app.get("/api/patient/:patientId/appointment-status", async (req, res) => {
     const { patientId } = req.params;
+    console.log(`Fetching appointment status for patient ID: ${patientId}`); // Debug log
+
     try {
         const appointment = await Appointment.findOne({ patientId }).sort({ date: -1 });
         if (!appointment) {
+            console.log(`Appointment not found for patient ID: ${patientId}`); // Debug log
             return res.status(404).send({ status: "error", data: "Appointment not found" });
         }
+
         const doctor = await Doctor.findOne({ number: appointment.doctorNumber });
-  
-        // Calculate number of patients ahead
+        if (!doctor) {
+            console.log(`Doctor not found for doctor number: ${appointment.doctorNumber}`); // Debug log
+            return res.status(404).send({ status: "error", data: "Doctor not found" });
+        }
+
         const startOfDay = new Date(appointment.date);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(appointment.date);
         endOfDay.setHours(23, 59, 59, 999);
-  
+
         const waitingCount = await Appointment.countDocuments({
             doctorNumber: appointment.doctorNumber,
             checkedIn: true,
             date: { $gte: startOfDay, $lte: endOfDay },
             _id: { $lt: appointment._id } // Only count appointments before the current one
         });
-  
+
         const stage = appointment.consultationStarted ? 'consultation_started' : (appointment.checkedIn ? 'checked_in' : 'initial');
-  
+
         res.send({
             status: "ok",
             data: {
@@ -384,9 +391,11 @@ app.get("/api/patient/:patientId/appointment-status", async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Error fetching appointment status:', error); // Enhanced error logging
         res.status(500).send({ status: "error", data: error.message });
     }
 });
+
   
 app.post('/api/start-consultation', async (req, res) => {
     const { patientId } = req.body;
