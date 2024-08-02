@@ -463,25 +463,11 @@ app.patch("/api/consultation/:id/estimated-time", async (req, res) => {
 
   // Route to submit feedback
 app.post("/api/feedback", async (req, res) => {
-    const { patientId, feedbackText, rating } = req.body;
+    const { feedbackText, rating } = req.body;
     try {
-        const feedback = new Feedback({ patientId, feedbackText, rating });
+        const feedback = new Feedback({ feedbackText, rating });
         await feedback.save();
         res.send({ status: "ok", data: "Feedback submitted successfully", feedback });
-    } catch (error) {
-        res.status(500).send({ status: "error", data: error.message });
-    }
-});
-
-// Route to get feedback for a specific patient
-app.get("/api/feedback/:patientId", async (req, res) => {
-    const { patientId } = req.params;
-    try {
-        const feedbacks = await Feedback.find({ patientId });
-        if (feedbacks.length === 0) {
-            return res.status(404).send({ status: "error", data: "No feedback found" });
-        }
-        res.send({ status: "ok", data: feedbacks });
     } catch (error) {
         res.status(500).send({ status: "error", data: error.message });
     }
